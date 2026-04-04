@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
+import dynamic from 'next/dynamic'
+const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -384,6 +386,11 @@ export default function Home() {
   const [generationsUsed, setGenerationsUsed] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
   const [hasVoice, setHasVoice] = useState(false)
+  const [hasVideo, setHasVideo] = useState(false)
+  const [videoData, setVideoData] = useState(null)
+  const [videoLoading, setVideoLoading] = useState(false)
+  const [showVideoModal, setShowVideoModal] = useState(false)
+  const [showVideoBanner, setShowVideoBanner] = useState(false)
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -398,6 +405,7 @@ export default function Home() {
     if (prof) {
       setIsPremium(prof.is_premium)
       setHasVoice(prof.has_voice || false)
+      setHasVideo(prof.has_video || false)
       setGenerationsUsed(prof.generations_used || 0)
     }
   }
@@ -441,6 +449,16 @@ export default function Home() {
         await supabase.from('profiles').update(updates).eq('id', user.id)
         await loadProfile(user.id)
         setShowVoiceBanner(true)
+        router.replace('/', undefined, { shallow: true })
+      }
+
+      // Retour Stripe Vidéo
+      if (router.query.success_video && session_id && user) {
+        await supabase.from('profiles').update({
+          has_video: true, has_voice: true, is_premium: true
+        }).eq('id', user.id)
+        await loadProfile(user.id)
+        setShowVideoBanner(true)
         router.replace('/', undefined, { shallow: true })
       }
     }
@@ -540,7 +558,18 @@ export default function Home() {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     setUser(null); setProfile(null); setIsPremium(false); setHasVoice(false)
-    setGenerationsUsed(0); setUserMenuOpen(false)
+    setHasVideo(false); setGenerationsUsed(0); setUserMenuOpen(false)
+  }
+
+  const handleVideoCheckout = async () => {
+    setCheckoutLoading(true)
+    try {
+      const res = await fetch('/api/checkout-video', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else { setError(data.error || 'Erreur Stripe.'); setShowVideoModal(false) }
+    } catch { setError('Erreur Stripe.') }
+    finally { setCheckoutLoading(false) }
   }
 
   const isBlocked = !isPremium && generationsUsed >= FREE_LIMIT
@@ -559,6 +588,41 @@ export default function Home() {
       {showPremiumModal && <PremiumModal onClose={() => setShowPremiumModal(false)} onCheckout={handleCheckout} loading={checkoutLoading} />}
       {showVoiceModal && <VoiceModal onClose={() => setShowVoiceModal(false)} onCheckout={handleVoiceCheckout} loading={checkoutLoading} isPremium={isPremium} />}
 
+      {/* Modale Vidéo */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="relative w-full max-w-md rounded-2xl border border-white/10 p-8 text-center"
+               style={{ background: '#0F0F0F' }}>
+            <button onClick={() => setShowVideoModal(false)} className="absolute top-4 right-4 text-white/30 hover:text-white/70"><IconX /></button>
+            <div className="text-5xl mb-4">🎬</div>
+            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
+              PACK COMPLET
+            </h2>
+            <p className="text-white/50 text-sm mb-6 leading-relaxed">
+              Tout inclus : scripts illimités, voix off IA et vidéos automatiques avec images IA + sous-titres.
+            </p>
+            <div className="space-y-2 mb-6 text-left">
+              {['✅ Scripts TikTok illimités', '🎙️ Voix off IA (MP3)', '🖼️ Images générées par IA', '📝 Sous-titres automatiques', '⬇️ Export TikTok + YouTube'].map(f => (
+                <div key={f} className="text-sm text-white/70">{f}</div>
+              ))}
+            </div>
+            <div className="rounded-xl p-4 mb-6 border border-white/10" style={{ background: 'rgba(255,45,85,0.05)' }}>
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-4xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>29,99€</span>
+                <span className="text-white/40 text-sm">/mois</span>
+              </div>
+            </div>
+            <button onClick={handleVideoCheckout} disabled={checkoutLoading}
+                    className="w-full py-4 rounded-xl font-bold text-base text-white transition-all disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', boxShadow: '0 0 40px rgba(255,45,85,0.3)' }}>
+              {checkoutLoading ? 'Redirection...' : '🎬 Pack Complet — 29,99€/mois'}
+            </button>
+            <p className="text-white/20 text-xs mt-4">Paiement sécurisé par Stripe 🔒</p>
+          </div>
+        </div>
+      )}
+
       {/* Bannières */}
       {showPremiumBanner && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
@@ -573,6 +637,14 @@ export default function Home() {
           <div className="flex items-center gap-3 px-5 py-3 rounded-xl border" style={{ background: 'rgba(139,92,246,0.1)', borderColor: 'rgba(139,92,246,0.3)' }}>
             <IconMic /><span className="text-sm font-medium text-purple-400 flex-1">🎙️ Pack Voix activé !</span>
             <button onClick={() => setShowVoiceBanner(false)} className="text-white/30 hover:text-white/70"><IconX /></button>
+          </div>
+        </div>
+      )}
+      {showVideoBanner && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-xl border" style={{ background: 'rgba(255,45,85,0.1)', borderColor: 'rgba(255,45,85,0.3)' }}>
+            <span>🎬</span><span className="text-sm font-medium text-red-400 flex-1">Pack Complet activé ! Vidéo IA disponible.</span>
+            <button onClick={() => setShowVideoBanner(false)} className="text-white/30 hover:text-white/70"><IconX /></button>
           </div>
         </div>
       )}
@@ -846,9 +918,9 @@ export default function Home() {
                 </div>
               </ResultCard>
 
-              {/* Structure vidéo (coming soon) */}
+              {/* Vidéo automatique */}
               <div className="rounded-2xl border border-white/10 p-5" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                          style={{ background: 'rgba(255,45,85,0.1)', color: '#FF2D55' }}>
@@ -856,14 +928,52 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white">Vidéo automatique</p>
-                      <p className="text-xs text-white/40 mt-0.5">Génération vidéo complète avec sous-titres</p>
+                      <p className="text-xs text-white/40 mt-0.5">Images IA + voix off + sous-titres</p>
                     </div>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-full font-medium"
-                        style={{ background: 'rgba(255,45,85,0.1)', color: '#FF2D55', border: '1px solid rgba(255,45,85,0.2)' }}>
-                    Bientôt
-                  </span>
+                  {!hasVideo && (
+                    <button onClick={() => setShowVideoModal(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold flex-shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', color: '#fff' }}>
+                      🎬 29,99€/mois
+                    </button>
+                  )}
                 </div>
+
+                {hasVideo ? (
+                  videoData ? (
+                    <VideoPlayer videoData={videoData} topic={result.topic} />
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        setVideoLoading(true)
+                        setError('')
+                        try {
+                          const res = await fetch('/api/generate-video', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ script: result.script, hook: result.hook, topic: result.topic, userId: user?.id, format: 'vertical' }),
+                          })
+                          const data = await res.json()
+                          if (data.error === 'VIDEO_REQUIRED') { setShowVideoModal(true); return }
+                          if (!res.ok) { setError(data.error || 'Erreur vidéo.'); return }
+                          setVideoData(data)
+                        } catch { setError('Erreur lors de la génération vidéo.') }
+                        finally { setVideoLoading(false) }
+                      }}
+                      disabled={videoLoading}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', boxShadow: '0 0 30px rgba(255,45,85,0.3)' }}>
+                      {videoLoading ? (
+                        <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> Génération vidéo en cours…</>
+                      ) : (
+                        <>🎬 Générer la vidéo complète</>
+                      )}
+                    </button>
+                  )
+                ) : (
+                  <p className="text-xs text-white/30 text-center">Pack Complet requis — Scripts + Voix + Vidéo IA</p>
+                )}
               </div>
 
               {result.tips?.length > 0 && (
@@ -932,16 +1042,3 @@ export default function Home() {
     </>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
