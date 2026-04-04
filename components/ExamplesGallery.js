@@ -140,6 +140,7 @@ function formatViews(views) {
 
 export default function ExamplesGallery({ onCTAClick }) {
   const [activeCategory, setActiveCategory] = useState('Tous')
+  const [currentIndex, setCurrentIndex] = useState(0)
   const scrollRef = useRef(null)
 
   const filtered = activeCategory === 'Tous'
@@ -147,6 +148,20 @@ export default function ExamplesGallery({ onCTAClick }) {
     : EXAMPLES.filter(e => e.category === activeCategory)
 
   const style = (s) => STYLES[s] || STYLES.faceless
+
+  const CARDS_VISIBLE = 3
+  const maxIndex = Math.max(0, filtered.length - CARDS_VISIBLE)
+
+  const prev = () => setCurrentIndex(i => Math.max(0, i - 1))
+  const next = () => setCurrentIndex(i => Math.min(maxIndex, i + 1))
+
+  // Reset index on category change
+  const handleCategory = (cat) => {
+    setActiveCategory(cat)
+    setCurrentIndex(0)
+  }
+
+  const visibleCards = filtered.slice(currentIndex, currentIndex + CARDS_VISIBLE)
 
   return (
     <section className="py-16 px-4 relative overflow-hidden">
@@ -167,10 +182,10 @@ export default function ExamplesGallery({ onCTAClick }) {
       </div>
 
       {/* Category filters */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-8 max-w-5xl mx-auto scrollbar-hide"
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-8 max-w-3xl mx-auto"
            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)}
+          <button key={cat} onClick={() => handleCategory(cat)}
                   className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200"
                   style={{
                     background: activeCategory === cat ? '#FF2D55' : 'rgba(255,255,255,0.05)',
@@ -182,80 +197,125 @@ export default function ExamplesGallery({ onCTAClick }) {
         ))}
       </div>
 
-      {/* Cards grid */}
-      <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-10">
-        {filtered.map((example) => {
-          const s = style(example.style)
-          return (
-            <div key={example.id}
-                 className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:z-10"
-                 style={{
-                   background: 'linear-gradient(180deg, #1A1A1A 0%, #0F0F0F 100%)',
-                   border: '1px solid rgba(255,255,255,0.06)',
-                   aspectRatio: '9/16',
-                   maxHeight: '280px',
-                 }}>
+      {/* Carousel */}
+      <div className="relative max-w-3xl mx-auto">
 
-              {/* Gradient background */}
-              <div className="absolute inset-0 opacity-20 transition-opacity duration-300 group-hover:opacity-40"
-                   style={{ background: `radial-gradient(circle at top, ${s.color}, transparent 70%)` }} />
+        {/* Flèche gauche */}
+        <button
+          onClick={prev}
+          disabled={currentIndex === 0}
+          className="absolute -left-5 sm:-left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-4 h-4">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
 
-              {/* Content */}
-              <div className="relative h-full flex flex-col justify-between p-3">
+        {/* Cards */}
+        <div className="grid grid-cols-3 gap-4">
+          {visibleCards.map((example) => {
+            const s = style(example.style)
+            return (
+              <div key={example.id}
+                   className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:z-10"
+                   style={{
+                     background: 'linear-gradient(180deg, #1A1A1A 0%, #0F0F0F 100%)',
+                     border: '1px solid rgba(255,255,255,0.06)',
+                     aspectRatio: '9/16',
+                   }}>
 
-                {/* Top */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                        style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}>
-                    {s.label}
-                  </span>
-                  <span className="text-white/30 text-xs">{example.emoji}</span>
-                </div>
+                {/* Gradient background */}
+                <div className="absolute inset-0 opacity-20 transition-opacity duration-300 group-hover:opacity-40"
+                     style={{ background: `radial-gradient(circle at top, ${s.color}, transparent 70%)` }} />
 
-                {/* Middle - emoji big */}
-                <div className="flex items-center justify-center flex-1">
-                  <span className="text-4xl group-hover:scale-110 transition-transform duration-300">
-                    {example.emoji}
-                  </span>
-                </div>
+                {/* Content */}
+                <div className="relative h-full flex flex-col justify-between p-3">
 
-                {/* Bottom */}
-                <div>
-                  <p className="text-white text-xs font-bold leading-tight mb-1.5 line-clamp-2">
-                    {example.hook}
-                  </p>
-                  <p className="text-white/40 text-xs leading-snug line-clamp-2 mb-2">
-                    {example.script}
-                  </p>
+                  {/* Top */}
                   <div className="flex items-center justify-between">
-                    <span className="text-white/30 text-xs">👁 {example.views}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-                      #{example.category}
+                    <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{ background: `${s.color}20`, color: s.color, border: `1px solid ${s.color}40` }}>
+                      {s.label}
+                    </span>
+                    <span className="text-white/30 text-xs">#{currentIndex + visibleCards.indexOf(example) + 1}</span>
+                  </div>
+
+                  {/* Middle - emoji */}
+                  <div className="flex items-center justify-center flex-1">
+                    <span className="text-5xl group-hover:scale-110 transition-transform duration-300">
+                      {example.emoji}
                     </span>
                   </div>
+
+                  {/* Bottom */}
+                  <div>
+                    <p className="text-white text-xs font-bold leading-tight mb-1.5 line-clamp-2">
+                      {example.hook}
+                    </p>
+                    <p className="text-white/40 text-xs leading-snug line-clamp-2 mb-2">
+                      {example.script}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/30 text-xs">👁 {example.views}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+                        #{example.category}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hover overlay */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
+                     style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                  <button onClick={onCTAClick}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white"
+                          style={{ background: 'linear-gradient(135deg, #FF2D55, #c0392b)' }}>
+                    Générer ça ⚡
+                  </button>
                 </div>
               </div>
+            )
+          })}
+        </div>
 
-              {/* Hover overlay */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-                   style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
-                <button onClick={onCTAClick}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
-                        style={{ background: 'linear-gradient(135deg, #FF2D55, #c0392b)' }}>
-                  Générer ça ⚡
-                </button>
-              </div>
-            </div>
-          )
-        })}
+        {/* Flèche droite */}
+        <button
+          onClick={next}
+          disabled={currentIndex >= maxIndex}
+          className="absolute -right-5 sm:-right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-20 disabled:cursor-not-allowed"
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-4 h-4">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex justify-center gap-1.5 mt-6 mb-8">
+        {Array.from({ length: Math.ceil(filtered.length / CARDS_VISIBLE) }).map((_, i) => (
+          <button key={i}
+                  onClick={() => setCurrentIndex(Math.min(i * CARDS_VISIBLE, maxIndex))}
+                  className="rounded-full transition-all duration-200"
+                  style={{
+                    width: Math.floor(currentIndex / CARDS_VISIBLE) === i ? '20px' : '6px',
+                    height: '6px',
+                    background: Math.floor(currentIndex / CARDS_VISIBLE) === i ? '#FF2D55' : 'rgba(255,255,255,0.15)',
+                  }} />
+        ))}
+      </div>
+
+      {/* Counter */}
+      <div className="text-center mb-6">
+        <p className="text-white/30 text-xs">
+          {currentIndex + 1}–{Math.min(currentIndex + CARDS_VISIBLE, filtered.length)} sur {filtered.length} exemples
+        </p>
       </div>
 
       {/* CTA */}
       <div className="text-center">
-        <p className="text-white/40 text-sm mb-4">
-          {filtered.length} exemple{filtered.length > 1 ? 's' : ''} — {activeCategory === 'Tous' ? '10 catégories' : `catégorie ${activeCategory}`}
-        </p>
         <button onClick={onCTAClick}
                 className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all duration-200 hover:scale-105"
                 style={{
@@ -269,3 +329,4 @@ export default function ExamplesGallery({ onCTAClick }) {
     </section>
   )
 }
+
