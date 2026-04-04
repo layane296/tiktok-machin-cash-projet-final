@@ -103,155 +103,136 @@ const FREE_LIMIT = 1
 const STORAGE_KEY = 'tcm_generations_used'
 const PREMIUM_KEY = 'tcm_premium'
 
-// ─── Modale Premium ───────────────────────────────────────────────
-function PremiumModal({ onClose, onCheckout, loading }) {
+// ─── Modale Pricing Unifiée ────────────────────────────────────────
+function PricingModal({ onClose, onCheckout, onVoiceCheckout, onVideoCheckout, loading, isPremium, hasVoice, hasVideo, defaultTab }) {
+  const [selected, setSelected] = useState(defaultTab || 'premium')
+
+  const plans = [
+    {
+      id: 'premium',
+      icon: '⚡',
+      label: 'Premium',
+      price: '9,99€',
+      color: '#FFD700',
+      gradient: 'linear-gradient(135deg, #FFD700, #FF8C00)',
+      features: ['Scripts TikTok illimités', 'Hooks ultra-viraux', 'Hashtags optimisés', 'Sauvegarde des scripts'],
+      cta: 'Passer Premium',
+      disabled: isPremium,
+      disabledLabel: 'Déjà actif ✓',
+    },
+    {
+      id: 'voice',
+      icon: '🎙️',
+      label: 'Voix Off',
+      price: '12,99€',
+      color: '#8B5CF6',
+      gradient: 'linear-gradient(135deg, #8B5CF6, #00F5FF)',
+      features: ['Tout du Premium', 'Voix off IA naturelle', 'Téléchargement MP3', 'Génération en 5 secondes'],
+      cta: 'Pack Voix',
+      disabled: hasVoice,
+      disabledLabel: 'Déjà actif ✓',
+    },
+    {
+      id: 'video',
+      icon: '🎬',
+      label: 'Pack Complet',
+      price: '29,99€',
+      color: '#FF2D55',
+      gradient: 'linear-gradient(135deg, #FF2D55, #8B5CF6)',
+      badge: 'MEILLEUR',
+      features: ['Tout du Pack Voix', 'Images IA (DALL-E)', 'Vidéo TikTok + YouTube', 'Sous-titres automatiques'],
+      cta: 'Pack Complet',
+      disabled: hasVideo,
+      disabledLabel: 'Déjà actif ✓',
+    },
+  ]
+
+  const selectedPlan = plans.find(p => p.id === selected)
+
+  const handleCTA = () => {
+    if (selected === 'premium') onCheckout()
+    else if (selected === 'voice') onVoiceCheckout(isPremium ? 'voice' : 'complete')
+    else if (selected === 'video') onVideoCheckout()
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 p-8 text-center"
-           style={{ background: '#0F0F0F' }}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white/70"><IconX /></button>
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-black"
-               style={{ background: 'linear-gradient(135deg, #FFD700, #FF8C00)' }}>
-            <IconLock />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-          GÉNÉRATION GRATUITE UTILISÉE
-        </h2>
-        <p className="text-white/50 text-sm mb-6 leading-relaxed">
-          Passe en Premium pour des générations illimitées.
-        </p>
-        <div className="space-y-3 mb-6 text-left">
-          {['Générations illimitées', 'Scripts ultra-viraux', 'Hashtags premium', 'Sauvegarde de tous tes scripts'].map(f => (
-            <div key={f} className="flex items-center gap-3 text-sm text-white/70">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                   style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700' }}><IconCheck /></div>
-              {f}
-            </div>
-          ))}
-        </div>
-        <div className="rounded-xl p-4 mb-4 border border-white/10" style={{ background: 'rgba(255,215,0,0.05)' }}>
-          <div className="flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>9,99€</span>
-            <span className="text-white/40 text-sm">/mois</span>
-          </div>
-        </div>
-        <button onClick={onCheckout} disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-base text-black transition-all duration-200 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #FFD700, #FF8C00)', boxShadow: '0 0 40px rgba(255,215,0,0.3)' }}>
-          {loading ? 'Redirection...' : <><IconCrown /> Premium — 9,99€/mois</>}
-        </button>
-        <p className="text-white/20 text-xs mt-4">Paiement sécurisé par Stripe 🔒</p>
-      </div>
-    </div>
-  )
-}
+         style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)' }}>
+      <div className="relative w-full max-w-lg rounded-2xl border border-white/10 overflow-hidden"
+           style={{ background: '#0A0A0A' }}>
+        <button onClick={onClose} className="absolute top-4 right-4 z-10 text-white/30 hover:text-white/70 transition-colors"><IconX /></button>
 
-// ─── Modale Voix ──────────────────────────────────────────────────
-function VoiceModal({ onClose, onCheckout, loading, isPremium }) {
-  const [selectedPlan, setSelectedPlan] = useState(isPremium ? 'voice' : 'complete')
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-         style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-      <div className="relative w-full max-w-md rounded-2xl border border-white/10 p-8"
-           style={{ background: '#0F0F0F' }}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white/70"><IconX /></button>
-
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-               style={{ background: 'linear-gradient(135deg, #8B5CF6, #00F5FF)' }}>
-            <IconMic />
-          </div>
+        {/* Header */}
+        <div className="p-6 pb-0 text-center">
+          <h2 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
+            CHOISIS TON PLAN
+          </h2>
+          <p className="text-white/40 text-sm">Résiliable à tout moment — Paiement sécurisé Stripe 🔒</p>
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-2 text-center" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-          PACK VOIX OFF
-        </h2>
-        <p className="text-white/50 text-sm mb-6 text-center leading-relaxed">
-          Transforme tes scripts en voix off professionnelle et télécharge l'audio pour tes vidéos TikTok.
-        </p>
-
-        {/* Features voix */}
-        <div className="space-y-2 mb-6">
-          {[
-            '🎙️ Voix off naturelle (IA OpenAI)',
-            '⬇️ Téléchargement MP3 illimité',
-            '⚡ Génération en 5 secondes',
-            '🎬 Structure vidéo automatique (bientôt)',
-          ].map(f => (
-            <div key={f} className="flex items-center gap-3 text-sm text-white/70">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                   style={{ background: 'rgba(139,92,246,0.2)', color: '#8B5CF6' }}><IconCheck /></div>
-              {f}
-            </div>
-          ))}
-        </div>
-
-        {/* Plans */}
-        <div className="space-y-3 mb-6">
-          {/* Plan Voix seul (si déjà Premium) */}
-          {isPremium && (
-            <div onClick={() => setSelectedPlan('voice')}
-                 className="rounded-xl p-4 border cursor-pointer transition-all duration-200"
-                 style={{
-                   borderColor: selectedPlan === 'voice' ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.1)',
-                   background: selectedPlan === 'voice' ? 'rgba(139,92,246,0.08)' : 'rgba(255,255,255,0.02)',
-                 }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-semibold text-sm">Pack Voix</p>
-                  <p className="text-white/40 text-xs mt-0.5">Pour les abonnés Premium existants</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>12,99€</span>
-                  <span className="text-white/40 text-xs">/mois</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pack Complet (si pas Premium) */}
-          {!isPremium && (
-            <div onClick={() => setSelectedPlan('complete')}
-                 className="rounded-xl p-4 border cursor-pointer transition-all duration-200 relative overflow-hidden"
-                 style={{
-                   borderColor: selectedPlan === 'complete' ? 'rgba(255,215,0,0.6)' : 'rgba(255,255,255,0.1)',
-                   background: selectedPlan === 'complete' ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.02)',
-                 }}>
-              <div className="absolute top-2 right-2">
-                <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                      style={{ background: 'rgba(255,215,0,0.2)', color: '#FFD700' }}>
-                  MEILLEURE OFFRE
+        {/* Plan tabs */}
+        <div className="flex gap-2 p-4">
+          {plans.map(plan => (
+            <button key={plan.id} onClick={() => setSelected(plan.id)}
+                    className="flex-1 py-3 rounded-xl text-xs font-bold transition-all duration-200 relative"
+                    style={{
+                      background: selected === plan.id ? plan.gradient : 'rgba(255,255,255,0.05)',
+                      color: selected === plan.id ? '#fff' : 'rgba(255,255,255,0.4)',
+                      border: selected === plan.id ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    }}>
+              {plan.badge && selected === plan.id && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-xs px-2 py-0.5 rounded-full font-bold"
+                      style={{ background: '#FFD700', color: '#000', fontSize: '9px' }}>
+                  {plan.badge}
                 </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white font-semibold text-sm">Pack Complet</p>
-                  <p className="text-white/40 text-xs mt-0.5">Scripts illimités + Voix off</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-white/30 text-xs line-through">22,98€</p>
-                  <span className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>19,99€</span>
-                  <span className="text-white/40 text-xs">/mois</span>
-                </div>
-              </div>
-            </div>
-          )}
+              )}
+              <div>{plan.icon}</div>
+              <div>{plan.label}</div>
+              <div style={{ opacity: 0.8 }}>{plan.price}/mois</div>
+            </button>
+          ))}
         </div>
 
-        <button onClick={() => onCheckout(selectedPlan)} disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-base transition-all duration-200 disabled:opacity-50"
-                style={{
-                  background: 'linear-gradient(135deg, #8B5CF6, #00F5FF)',
-                  color: '#fff',
-                  boxShadow: '0 0 40px rgba(139,92,246,0.3)',
-                }}>
-          {loading ? 'Redirection...' : <><IconMic /> {isPremium ? 'Pack Voix — 12,99€/mois' : 'Pack Complet — 19,99€/mois'}</>}
-        </button>
-        <p className="text-white/20 text-xs mt-4 text-center">Paiement sécurisé par Stripe 🔒</p>
+        {/* Plan details */}
+        {selectedPlan && (
+          <div className="px-6 pb-6">
+            {/* Price */}
+            <div className="rounded-2xl p-5 mb-4 text-center"
+                 style={{ background: `${selectedPlan.color}10`, border: `1px solid ${selectedPlan.color}30` }}>
+              <div className="flex items-baseline justify-center gap-1 mb-1">
+                <span className="text-5xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+                  {selectedPlan.price}
+                </span>
+                <span className="text-white/40">/mois</span>
+              </div>
+              <p className="text-white/40 text-xs">Plan {selectedPlan.label}</p>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-2.5 mb-6">
+              {selectedPlan.features.map(f => (
+                <div key={f} className="flex items-center gap-3 text-sm text-white/70">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                       style={{ background: `${selectedPlan.color}20`, color: selectedPlan.color }}>
+                    <IconCheck />
+                  </div>
+                  {f}
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <button onClick={handleCTA} disabled={loading || selectedPlan.disabled}
+                    className="w-full py-4 rounded-xl font-bold text-base text-white transition-all disabled:opacity-60"
+                    style={{
+                      background: selectedPlan.disabled ? 'rgba(255,255,255,0.1)' : selectedPlan.gradient,
+                      boxShadow: selectedPlan.disabled ? 'none' : `0 0 40px ${selectedPlan.color}40`,
+                      color: selectedPlan.disabled ? 'rgba(255,255,255,0.4)' : '#fff',
+                    }}>
+              {loading ? 'Redirection...' : selectedPlan.disabled ? selectedPlan.disabledLabel : `${selectedPlan.icon} ${selectedPlan.cta} — ${selectedPlan.price}/mois`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -585,42 +566,18 @@ export default function Home() {
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
       </Head>
 
-      {showPremiumModal && <PremiumModal onClose={() => setShowPremiumModal(false)} onCheckout={handleCheckout} loading={checkoutLoading} />}
-      {showVoiceModal && <VoiceModal onClose={() => setShowVoiceModal(false)} onCheckout={handleVoiceCheckout} loading={checkoutLoading} isPremium={isPremium} />}
-
-      {/* Modale Vidéo */}
-      {showVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-             style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-          <div className="relative w-full max-w-md rounded-2xl border border-white/10 p-8 text-center"
-               style={{ background: '#0F0F0F' }}>
-            <button onClick={() => setShowVideoModal(false)} className="absolute top-4 right-4 text-white/30 hover:text-white/70"><IconX /></button>
-            <div className="text-5xl mb-4">🎬</div>
-            <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>
-              PACK COMPLET
-            </h2>
-            <p className="text-white/50 text-sm mb-6 leading-relaxed">
-              Tout inclus : scripts illimités, voix off IA et vidéos automatiques avec images IA + sous-titres.
-            </p>
-            <div className="space-y-2 mb-6 text-left">
-              {['✅ Scripts TikTok illimités', '🎙️ Voix off IA (MP3)', '🖼️ Images générées par IA', '📝 Sous-titres automatiques', '⬇️ Export TikTok + YouTube'].map(f => (
-                <div key={f} className="text-sm text-white/70">{f}</div>
-              ))}
-            </div>
-            <div className="rounded-xl p-4 mb-6 border border-white/10" style={{ background: 'rgba(255,45,85,0.05)' }}>
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>29,99€</span>
-                <span className="text-white/40 text-sm">/mois</span>
-              </div>
-            </div>
-            <button onClick={handleVideoCheckout} disabled={checkoutLoading}
-                    className="w-full py-4 rounded-xl font-bold text-base text-white transition-all disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', boxShadow: '0 0 40px rgba(255,45,85,0.3)' }}>
-              {checkoutLoading ? 'Redirection...' : '🎬 Pack Complet — 29,99€/mois'}
-            </button>
-            <p className="text-white/20 text-xs mt-4">Paiement sécurisé par Stripe 🔒</p>
-          </div>
-        </div>
+      {(showPremiumModal || showVoiceModal || showVideoModal) && (
+        <PricingModal
+          onClose={() => { setShowPremiumModal(false); setShowVoiceModal(false); setShowVideoModal(false) }}
+          onCheckout={handleCheckout}
+          onVoiceCheckout={handleVoiceCheckout}
+          onVideoCheckout={handleVideoCheckout}
+          loading={checkoutLoading}
+          isPremium={isPremium}
+          hasVoice={hasVoice}
+          hasVideo={hasVideo}
+          defaultTab={showVideoModal ? 'video' : showVoiceModal ? 'voice' : 'premium'}
+        />
       )}
 
       {/* Bannières */}
