@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import dynamic from 'next/dynamic'
 const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
+const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -720,6 +721,14 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </main>
+
+        {/* Galerie d'exemples */}
+        <ExamplesGallery onCTAClick={() => {
+          window.scrollTo({ top: document.getElementById('generator')?.offsetTop || 0, behavior: 'smooth' })
+        }} />
+
+        <main className="relative z-10 max-w-3xl mx-auto px-6 pb-20" id="generator">
 
           {/* Plans */}
           {!hasVoice && !isBlocked && (
