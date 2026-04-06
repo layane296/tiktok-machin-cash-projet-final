@@ -647,6 +647,12 @@ export default function Home() {
               </div>
             )}
 
+            {/* Lien Pricing */}
+            <button onClick={() => router.push('/pricing')}
+                    className="hidden sm:block text-xs text-white/40 hover:text-white/70 transition-colors px-2">
+              Tarifs
+            </button>
+
             {/* User menu */}
             {user ? (
               <div className="relative">
