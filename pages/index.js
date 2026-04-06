@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../lib/useLanguage'
 import dynamic from 'next/dynamic'
 import SEO from '../components/SEO'
 const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
@@ -358,6 +359,7 @@ function ResultCard({ icon, label, accent, children, copyText, copyId, copied, o
 // ─── Page principale ───────────────────────────────────────────────
 export default function Home() {
   const router = useRouter()
+  const { lang, toggleLang, t } = useLanguage()
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -503,7 +505,7 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, userId: user?.id }),
+        body: JSON.stringify({ topic, userId: user?.id, lang }),
       })
       const data = await res.json()
       if (data.error === 'LIMIT_REACHED') { setShowPremiumModal(true); setLoading(false); return }
@@ -685,7 +687,14 @@ export default function Home() {
             {/* Lien Pricing */}
             <button onClick={() => router.push('/pricing')}
                     className="hidden sm:block text-xs text-white/40 hover:text-white/70 transition-colors px-2">
-              Tarifs
+              {t('nav_pricing')}
+            </button>
+
+            {/* Language toggle */}
+            <button onClick={toggleLang}
+                    className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full border border-white/10 text-xs font-medium text-white/50 hover:text-white transition-all"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}>
+              {lang === 'fr' ? '🇬🇧 EN' : '🇫🇷 FR'}
             </button>
 
             {/* User menu */}
@@ -768,12 +777,16 @@ export default function Home() {
           </h1>
 
           <p className="text-center text-white/50 text-base mb-10 max-w-lg mx-auto leading-relaxed">
-            Script viral + hook + hashtags + voix off professionnelle. Tout ce qu'il faut pour cartonner sur TikTok.
+            {t('hero_sub')}
           </p>
 
           {/* Stats */}
           <div className="flex justify-center gap-8 mb-10">
-            {[{ label: 'Scripts générés', value: '47K+' }, { label: 'Vues cumulées', value: '2.1M' }, { label: 'Creators actifs', value: '8.3K' }].map(({ label, value }) => (
+            {[
+              { label: t('hero_stats_scripts'), value: '47K+' },
+              { label: t('hero_stats_views'), value: '2.1M' },
+              { label: t('hero_stats_creators'), value: '8.3K' }
+            ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <div className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.05em' }}>{value}</div>
                 <div className="text-xs text-white/30 mt-0.5">{label}</div>
@@ -833,12 +846,12 @@ export default function Home() {
           {/* Generator */}
           <div className="rounded-2xl border border-white/10 p-6 mb-6"
                style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)' }}>
-            <label className="block text-sm font-medium text-white/60 mb-3">Quel est ton sujet ?</label>
+            <label className="block text-sm font-medium text-white/60 mb-3">{t('gen_label')}</label>
             <textarea
               value={topic}
               onChange={e => setTopic(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && (e.metaKey || e.ctrlKey) && handleGenerate()}
-              placeholder="Ex: Comment gagner 1000€/mois en dropshipping..."
+              placeholder={t('gen_placeholder')}
               rows={3}
               className="w-full rounded-xl px-4 py-3.5 text-sm text-white placeholder-white/20 outline-none resize-none"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-body)', lineHeight: '1.6' }}
@@ -847,9 +860,9 @@ export default function Home() {
             />
             <div className="flex items-center justify-between mt-3">
               <span className="text-xs">
-                {isPremium ? <span className="text-yellow-500/60">✨ Premium actif</span>
-                  : isBlocked ? <span className="text-[#FF2D55]">🔒 Limite atteinte</span>
-                  : <span className="text-white/20">{generationsLeft} gratuite restante</span>}
+                {isPremium ? <span className="text-yellow-500/60">✨ {t('gen_unlimited')}</span>
+                  : isBlocked ? <span className="text-[#FF2D55]">🔒 {t('gen_blocked')}</span>
+                  : <span className="text-white/20">{generationsLeft} {t('gen_limit')}</span>}
               </span>
               <button onClick={handleGenerate} disabled={!topic.trim() || loading}
                       className="flex items-center gap-2.5 px-6 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200 disabled:opacity-40"

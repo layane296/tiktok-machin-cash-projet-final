@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { topic, userId } = req.body
+  const { topic, userId, lang = 'fr' } = req.body
 
   if (!topic || topic.trim().length < 3) {
-    return res.status(400).json({ error: 'Le sujet est trop court.' })
+    return res.status(400).json({ error: lang === 'en' ? 'Topic too short.' : 'Le sujet est trop court.' })
   }
 
   // Vérification utilisateur connecté
@@ -32,7 +32,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Clé API Anthropic manquante.' })
   }
 
-  const systemPrompt = `Tu es un expert en création de contenu TikTok viral. Tu crées des scripts percutants, des hooks accrocheurs et des descriptions optimisées pour maximiser la portée organique. Tu réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks, sans commentaires. Format attendu:
+  const isEnglish = lang === 'en'
+  const systemPrompt = isEnglish
+    ? `You are an expert in creating viral TikTok content. You create impactful scripts, catchy hooks and optimized descriptions to maximize organic reach. You respond ONLY in valid JSON, no markdown, no backticks, no comments. Expected format:
+{
+  "hook": "string — 1-2 line ultra-catchy hook that stops the scroll",
+  "script": "string — complete TikTok script of 150-250 words, structured in 3 acts: visual hook, value content, call-to-action. Use dashes for spoken lines.",
+  "description": "string — optimized description of 100-150 words to maximize discovery",
+  "hashtags": "string — 15-20 hashtags separated by spaces, mix viral + niche",
+  "tips": ["tip1", "tip2", "tip3"] — 3 specific filming tips for this content
+}`
+    : `Tu es un expert en création de contenu TikTok viral. Tu crées des scripts percutants, des hooks accrocheurs et des descriptions optimisées pour maximiser la portée organique. Tu réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks, sans commentaires. Format attendu:
 {
   "hook": "string — une phrase d'accroche de 1-2 lignes ultra-percutante qui arrête le scroll",
   "script": "string — script complet TikTok de 150-250 mots, structuré en 3 actes: hook visuel, contenu de valeur, call-to-action. Utilise des tirets pour les lignes parlées.",
