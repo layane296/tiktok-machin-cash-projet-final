@@ -7,6 +7,7 @@ const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: fa
 const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), { ssr: false })
 const EmailCapture = dynamic(() => import('../components/EmailCapture'), { ssr: false })
 const Testimonials = dynamic(() => import('../components/Testimonials'), { ssr: false })
+const ReferralPanel = dynamic(() => import('../components/ReferralPanel'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -407,6 +408,11 @@ export default function Home() {
         setIsPremium(premium)
       }
 
+      // Sauvegarder le code de parrainage si présent dans l'URL
+      if (router.query.ref) {
+        localStorage.setItem('tcm_ref_code', router.query.ref)
+      }
+
       // Retour Stripe Premium
       const { success, success_voice, plan, session_id, canceled } = router.query
       if (success && session_id) {
@@ -448,8 +454,22 @@ export default function Home() {
     }
     init()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user || null)
+      // Auto-claim referral code si présent
+      if (_event === 'SIGNED_IN' && session?.user) {
+        const refCode = localStorage.getItem('tcm_ref_code')
+        if (refCode) {
+          try {
+            await fetch('/api/referral/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: refCode, referredUserId: session.user.id }),
+            })
+            localStorage.removeItem('tcm_ref_code')
+          } catch {}
+        }
+      }
     })
     return () => subscription.unsubscribe()
   }, [router.query])
@@ -670,6 +690,15 @@ export default function Home() {
                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left">
                       <IconHistory /> Mes scripts
                     </button>
+                    {isPremium && (
+                      <button onClick={() => {
+                        setUserMenuOpen(false)
+                        document.getElementById('referral-section')?.scrollIntoView({ behavior: 'smooth' })
+                      }}
+                              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-green-400 hover:bg-white/5 transition-colors text-left">
+                        🤝 Parrainer un ami
+                      </button>
+                    )}
                     {!isPremium && (
                       <button onClick={() => { setShowPremiumModal(true); setUserMenuOpen(false) }}
                               className="w-full flex items-center gap-2 px-4 py-3 text-sm text-yellow-400 hover:bg-white/5 transition-colors text-left">
@@ -1006,6 +1035,13 @@ export default function Home() {
 
         {/* Témoignages */}
         <Testimonials />
+
+        {/* Parrainage */}
+        {user && (
+          <div id="referral-section" className="relative z-10 max-w-xl mx-auto px-6 pb-6">
+            <ReferralPanel user={user} isPremium={isPremium} profile={profile} />
+          </div>
+        )}
 
         {/* Email capture */}
         <div className="relative z-10 max-w-xl mx-auto px-6 pb-12">
