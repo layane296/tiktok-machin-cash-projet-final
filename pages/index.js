@@ -3,6 +3,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import dynamic from 'next/dynamic'
+import SEO from '../components/SEO'
 const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
 const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), { ssr: false })
 const EmailCapture = dynamic(() => import('../components/EmailCapture'), { ssr: false })
@@ -582,12 +583,7 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        <title>TikTok Cash Machine — Scripts viraux + Voix off IA</title>
-        <meta name="description" content="Génère des scripts TikTok viraux et des voix off professionnelles grâce à l'IA." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
-      </Head>
+      <SEO />
 
       {(showPremiumModal || showVoiceModal || showVideoModal) && (
         <PricingModal

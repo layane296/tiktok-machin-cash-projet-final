@@ -2,6 +2,7 @@
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import SEO from '../components/SEO'
 
 const IconCheck = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
@@ -133,11 +134,12 @@ export default function Pricing() {
 
   return (
     <>
-      <Head>
-        <title>Tarifs — TikTok Cash Machine</title>
-        <meta name="description" content="Découvrez nos plans : Gratuit, Premium 9,99€, Pack Voix 12,99€ et Pack Complet 29,99€. Générez des scripts TikTok viraux avec l'IA." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
+      <SEO
+        title="Tarifs — TikTok Cash Machine | Plans à partir de 9,99€/mois"
+        description="Découvrez nos plans : Gratuit, Premium 9,99€, Pack Voix 12,99€ et Pack Complet 29,99€. Générez des scripts TikTok viraux, voix off IA et vidéos automatiques."
+        url="https://tiktok-machin-cash-projet-final.vercel.app/pricing"
+        keywords="prix tiktok cash machine, abonnement script tiktok, tarif voix off ia, generateur tiktok prix"
+      />
 
       <div className="min-h-screen grid-bg" style={{ fontFamily: 'var(--font-body)' }}>
 
