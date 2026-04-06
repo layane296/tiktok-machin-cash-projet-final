@@ -700,6 +700,10 @@ export default function Home() {
                 {userMenuOpen && (
                   <div className="absolute right-0 top-10 w-48 rounded-xl border border-white/10 overflow-hidden z-50"
                        style={{ background: '#0F0F0F' }}>
+                    <button onClick={() => { router.push('/nexvari-ai'); setUserMenuOpen(false) }}
+                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-cyan-400 hover:bg-white/5 transition-colors text-left">
+                      ✨ Nexvari AI
+                    </button>
                     <button onClick={() => { router.push('/mes-scripts'); setUserMenuOpen(false) }}
                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left">
                       <IconHistory /> Mes scripts
@@ -1107,7 +1111,7 @@ export default function Home() {
         <script dangerouslySetInnerHTML={{
           __html: `
             window.$crisp=[];
-            window.CRISP_WEBSITE_ID=fe8f62fb-4c15-46d0-878d-926f003202aa;
+            window.CRISP_WEBSITE_ID="VOTRE_CRISP_ID";
             (function(){
               var d=document;
               var s=d.createElement("script");
