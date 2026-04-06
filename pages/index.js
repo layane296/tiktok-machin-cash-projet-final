@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import dynamic from 'next/dynamic'
 const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
 const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), { ssr: false })
+const EmailCapture = dynamic(() => import('../components/EmailCapture'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -995,6 +996,11 @@ export default function Home() {
             </div>
           )}
         </main>
+
+        {/* Email capture */}
+        <div className="relative z-10 max-w-xl mx-auto px-6 pb-12">
+          <EmailCapture userId={user?.id} />
+        </div>
 
         <footer className="relative z-10 border-t border-white/5 py-6 px-6">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
