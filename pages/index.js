@@ -9,6 +9,7 @@ const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), {
 const EmailCapture = dynamic(() => import('../components/EmailCapture'), { ssr: false })
 const Testimonials = dynamic(() => import('../components/Testimonials'), { ssr: false })
 const ReferralPanel = dynamic(() => import('../components/ReferralPanel'), { ssr: false })
+const Onboarding = dynamic(() => import('../components/Onboarding'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -377,6 +378,7 @@ export default function Home() {
   const [videoLoading, setVideoLoading] = useState(false)
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [showVideoBanner, setShowVideoBanner] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -412,6 +414,12 @@ export default function Home() {
       // Sauvegarder le code de parrainage si présent dans l'URL
       if (router.query.ref) {
         localStorage.setItem('tcm_ref_code', router.query.ref)
+      }
+
+      // Afficher l'onboarding pour les nouveaux visiteurs
+      const onboardingDone = localStorage.getItem('tcm_onboarding_done')
+      if (!onboardingDone) {
+        setTimeout(() => setShowOnboarding(true), 1000)
       }
 
       // Retour Stripe Premium
@@ -584,6 +592,16 @@ export default function Home() {
   return (
     <>
       <SEO />
+
+      {showOnboarding && (
+        <Onboarding
+          onComplete={() => {
+            setShowOnboarding(false)
+            document.getElementById('generator')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          onSkip={() => setShowOnboarding(false)}
+        />
+      )}
 
       {(showPremiumModal || showVoiceModal || showVideoModal) && (
         <PricingModal
