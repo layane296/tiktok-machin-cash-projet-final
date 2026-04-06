@@ -5,7 +5,7 @@ import { supabaseAdmin } from '../../../lib/supabase-server'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = 'TikTok Cash Machine <noreply@nexvari.com>'
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://tiktok-machin-cash-projet-final.vercel.app'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://nexvari.com'
 
 // ─── Templates emails ─────────────────────────────────────────────
 const emailTemplates = {

@@ -4,8 +4,8 @@ import Head from 'next/head'
 const DEFAULT = {
   title: 'TikTok Cash Machine — Génère des scripts viraux en 10 secondes avec l\'IA',
   description: 'Crée des scripts TikTok viraux, voix off IA et vidéos automatiques en 10 secondes. Hook percutant, hashtags optimisés, export MP3 et MP4. Essaie gratuitement.',
-  url: 'https://tiktok-machin-cash-projet-final.vercel.app',
-  image: 'https://tiktok-machin-cash-projet-final.vercel.app/og-image.png',
+  url: 'https://nexvari.com',
+  image: 'https://nexvari.com/og-image.png',
   keywords: 'script tiktok viral, générateur script tiktok, voix off ia tiktok, créer vidéo tiktok automatique, tiktok ia, contenu tiktok automatique, hook tiktok viral, hashtags tiktok, script tiktok gratuit',
 }
 

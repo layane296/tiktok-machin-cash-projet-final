@@ -1,5 +1,5 @@
 // pages/sitemap.xml.js
-const BASE_URL = 'https://tiktok-machin-cash-projet-final.vercel.app'
+const BASE_URL = 'https://nexvari.com'
 
 function generateSitemap() {
   const pages = [
