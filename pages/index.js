@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 const VideoPlayer = dynamic(() => import('../components/VideoPlayer'), { ssr: false })
 const ExamplesGallery = dynamic(() => import('../components/ExamplesGallery'), { ssr: false })
 const EmailCapture = dynamic(() => import('../components/EmailCapture'), { ssr: false })
+const Testimonials = dynamic(() => import('../components/Testimonials'), { ssr: false })
 
 // ─── Icônes ───────────────────────────────────────────────────────
 const IconTikTok = () => (
@@ -1002,6 +1003,9 @@ export default function Home() {
             </div>
           )}
         </main>
+
+        {/* Témoignages */}
+        <Testimonials />
 
         {/* Email capture */}
         <div className="relative z-10 max-w-xl mx-auto px-6 pb-12">
