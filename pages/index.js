@@ -704,6 +704,10 @@ export default function Home() {
                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-cyan-400 hover:bg-white/5 transition-colors text-left">
                       ✨ Nexvari AI
                     </button>
+                    <button onClick={() => { router.push('/dashboard'); setUserMenuOpen(false) }}
+                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left">
+                      📊 Mon tableau de bord
+                    </button>
                     <button onClick={() => { router.push('/mes-scripts'); setUserMenuOpen(false) }}
                             className="w-full flex items-center gap-2 px-4 py-3 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors text-left">
                       <IconHistory /> Mes scripts
