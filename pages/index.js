@@ -870,9 +870,9 @@ export default function Home() {
                         background: !topic.trim() || loading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #FF2D55, #c0392b)',
                         boxShadow: topic.trim() && !loading ? '0 0 30px rgba(255,45,85,0.4)' : 'none',
                       }}>
-                {loading ? <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> Génération…</>
-                  : isBlocked ? <><IconLock /> Passe en Premium</>
-                  : <><IconZap /> Générer <IconArrow /></>}
+                {loading ? <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> {t('gen_loading')}</>
+                  : isBlocked ? <><IconLock /> {t('plan_upgrade')}</>
+                  : <><IconZap /> {t('gen_btn')} <IconArrow /></>}
               </button>
             </div>
           </div>
@@ -900,23 +900,23 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   <h2 className="text-sm font-semibold text-white/70">
-                    Contenu pour : <span className="text-white">"{result.topic}"</span>
+                    {t('result_for')} <span className="text-white">"{result.topic}"</span>
                   </h2>
                 </div>
                 <button onClick={() => copy(allContent, 'all')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border"
                         style={{ borderColor: 'rgba(255,215,0,0.3)', color: '#FFD700', background: 'rgba(255,215,0,0.05)' }}>
                   {copied === 'all' ? <IconCheck /> : <IconCopy />}
-                  {copied === 'all' ? 'Copié !' : 'Tout copier'}
+                  {copied === 'all' ? t('result_copied') : t('result_copy_all')}
                 </button>
               </div>
 
-              <ResultCard icon="🪝" label="Hook Viral" accent="pink" copyText={result.hook} copyId="hook" copied={copied} onCopy={copy}>
+              <ResultCard icon="🪝" label={t('result_hook')} accent="pink" copyText={result.hook} copyId="hook" copied={copied} onCopy={copy}>
                 <p className="text-lg font-medium leading-snug text-white">"{result.hook}"</p>
               </ResultCard>
 
               {/* Script + Voix off */}
-              <ResultCard icon="📜" label="Script Complet" accent="cyan" copyText={result.script} copyId="script" copied={copied} onCopy={copy}>
+              <ResultCard icon="📜" label={t('result_script')} accent="cyan" copyText={result.script} copyId="script" copied={copied} onCopy={copy}>
                 <div className="whitespace-pre-line text-sm leading-7 mb-4">{result.script}</div>
 
                 {/* Bouton Voix off */}
@@ -929,11 +929,11 @@ export default function Home() {
                             border: hasVoice ? 'none' : '1px solid rgba(139,92,246,0.3)',
                           }}>
                     {voiceLoading ? (
-                      <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> Génération audio…</>
+                      <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> {t('voice_loading')}</>
                     ) : hasVoice ? (
-                      <><IconMic /> Générer la voix off</>
+                      <><IconMic /> {t('voice_btn')}</>
                     ) : (
-                      <><IconLock /> Voix off — Pack à 12,99€/mois</>
+                      <><IconLock /> {t('voice_lock')}</>
                     )}
                   </button>
                 ) : (
@@ -941,11 +941,11 @@ export default function Home() {
                 )}
               </ResultCard>
 
-              <ResultCard icon="📝" label="Description" accent="purple" copyText={result.description} copyId="desc" copied={copied} onCopy={copy}>
+              <ResultCard icon="📝" label={t('result_desc')} accent="purple" copyText={result.description} copyId="desc" copied={copied} onCopy={copy}>
                 <p className="text-sm leading-relaxed">{result.description}</p>
               </ResultCard>
 
-              <ResultCard icon="#️⃣" label="Hashtags" accent="gold" copyText={result.hashtags} copyId="tags" copied={copied} onCopy={copy}>
+              <ResultCard icon="#️⃣" label={t('result_tags')} accent="gold" copyText={result.hashtags} copyId="tags" copied={copied} onCopy={copy}>
                 <div className="flex flex-wrap gap-2">
                   {result.hashtags.split(' ').filter(Boolean).map((tag, i) => (
                     <span key={i} className="text-xs px-2 py-1 rounded-md font-mono"
@@ -965,15 +965,15 @@ export default function Home() {
                       🎬
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">Vidéo automatique</p>
-                      <p className="text-xs text-white/40 mt-0.5">Images IA + voix off + sous-titres</p>
+                      <p className="text-sm font-semibold text-white">{t('video_title')}</p>
+                      <p className="text-xs text-white/40 mt-0.5">{t('video_sub')}</p>
                     </div>
                   </div>
                   {!hasVideo && (
                     <button onClick={() => setShowVideoModal(true)}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold flex-shrink-0"
                             style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', color: '#fff' }}>
-                      🎬 29,99€/mois
+                      🎬 {t('video_price')}
                     </button>
                   )}
                 </div>
@@ -1003,14 +1003,14 @@ export default function Home() {
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)', boxShadow: '0 0 30px rgba(255,45,85,0.3)' }}>
                       {videoLoading ? (
-                        <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> Génération vidéo en cours…</>
+                        <><span className="loading-dots"><span>●</span><span>●</span><span>●</span></span> {t('video_loading')}</>
                       ) : (
-                        <>🎬 Générer la vidéo complète</>
+                        <>🎬 {t('video_btn')}</>
                       )}
                     </button>
                   )
                 ) : (
-                  <p className="text-xs text-white/30 text-center">Pack Complet requis — Scripts + Voix + Vidéo IA</p>
+                  <p className="text-xs text-white/30 text-center">{t('video_soon')}</p>
                 )}
               </div>
 
@@ -1018,7 +1018,7 @@ export default function Home() {
                 <div className="rounded-2xl border border-white/10 p-6" style={{ background: 'rgba(255,255,255,0.02)' }}>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase border text-[#8B5CF6] border-[#8B5CF6]/30 bg-[#8B5CF6]/5">
-                      <span>💡</span><span>Conseils de tournage</span>
+                      <span>💡</span><span>{t('result_tips')}</span>
                     </div>
                   </div>
                   <ul className="space-y-3">
@@ -1038,13 +1038,13 @@ export default function Home() {
                   <button onClick={handleGenerate} disabled={loading}
                           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border border-white/10 text-white/60 hover:text-white transition-all"
                           style={{ background: 'rgba(255,255,255,0.04)' }}>
-                    <IconZap /> Regénérer
+                    <IconZap /> {t('result_regen')}
                   </button>
                 ) : (
                   <button onClick={() => setShowPremiumModal(true)}
                           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-black"
                           style={{ background: 'linear-gradient(135deg, #FFD700, #FF8C00)' }}>
-                    <IconCrown /> Passer en Premium
+                    <IconCrown /> {t('plan_upgrade')}
                   </button>
                 )}
               </div>
@@ -1054,9 +1054,9 @@ export default function Home() {
           {!result && !loading && (
             <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { icon: '🪝', title: 'Hook Viral', desc: "Un accroche qui stoppe le scroll dès la première seconde." },
-                { icon: '🎙️', title: 'Voix Off IA', desc: "Transforme ton script en voix naturelle et télécharge le MP3." },
-                { icon: '🎬', title: 'Vidéo Auto', desc: "Génération vidéo complète avec sous-titres — bientôt disponible." },
+                { icon: '🪝', title: lang === 'en' ? 'Viral Hook' : 'Hook Viral', desc: lang === 'en' ? "A hook that stops the scroll in the first second." : "Un accroche qui stoppe le scroll dès la première seconde." },
+                { icon: '🎙️', title: lang === 'en' ? 'AI Voiceover' : 'Voix Off IA', desc: lang === 'en' ? "Turn your script into a natural voice and download the MP3." : "Transforme ton script en voix naturelle et télécharge le MP3." },
+                { icon: '🎬', title: lang === 'en' ? 'Auto Video' : 'Vidéo Auto', desc: lang === 'en' ? "Full video generation with subtitles." : "Génération vidéo complète avec sous-titres." },
               ].map(({ icon, title, desc }) => (
                 <div key={title} className="rounded-2xl border border-white/8 p-5 text-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
                   <div className="text-3xl mb-3">{icon}</div>
@@ -1087,36 +1087,36 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-6">
               <div>
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">Produit</p>
+                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">{t('footer_product')}</p>
                 <div className="space-y-2">
-                  <button onClick={() => router.push('/')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Accueil</button>
-                  <button onClick={() => router.push('/pricing')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Tarifs</button>
-                  <button onClick={() => router.push('/blog')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Blog</button>
+                  <button onClick={() => router.push('/')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('footer_home')}</button>
+                  <button onClick={() => router.push('/pricing')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('nav_pricing')}</button>
+                  <button onClick={() => router.push('/blog')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('footer_blog')}</button>
                 </div>
               </div>
               <div>
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">Compte</p>
+                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">{t('footer_account')}</p>
                 <div className="space-y-2">
-                  <button onClick={() => router.push('/auth')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Connexion</button>
-                  <button onClick={() => router.push('/mes-scripts')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Mes scripts</button>
+                  <button onClick={() => router.push('/auth')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('footer_login')}</button>
+                  <button onClick={() => router.push('/mes-scripts')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('nav_scripts')}</button>
                 </div>
               </div>
               <div>
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">Légal</p>
+                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">{t('footer_legal')}</p>
                 <div className="space-y-2">
-                  <button onClick={() => router.push('/legal')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">CGU</button>
-                  <button onClick={() => router.push('/legal?tab=privacy')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">Confidentialité</button>
+                  <button onClick={() => router.push('/legal')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('footer_cgu')}</button>
+                  <button onClick={() => router.push('/legal?tab=privacy')} className="block text-xs text-white/30 hover:text-white/60 transition-colors">{t('footer_privacy')}</button>
                 </div>
               </div>
               <div>
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">Contact</p>
+                <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">{t('footer_contact')}</p>
                 <div className="space-y-2">
                   <a href="mailto:contact@nexvari.com" className="block text-xs text-white/30 hover:text-white/60 transition-colors">contact@nexvari.com</a>
                 </div>
               </div>
             </div>
             <div className="border-t border-white/5 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <span className="text-xs text-white/20">© 2025 TikTok Cash Machine — nexvari.com</span>
+              <span className="text-xs text-white/20">{t('footer_rights')}</span>
               <div className="flex items-center gap-3 text-xs text-white/20">
                 <span>Stripe 🔒</span><span>Claude AI</span><span>OpenAI TTS</span>
               </div>
