@@ -301,10 +301,9 @@ export default function NexvariAI() {
         return
       }
 
-      // Mode chat
+      // Mode chat avec streaming
       const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
 
-      // Si fichier, lire le contenu
       let fileContent = ''
       if (file) {
         fileContent = await new Promise(resolve => {
@@ -324,15 +323,52 @@ export default function NexvariAI() {
         }),
       })
 
-      const data = await res.json()
-      setIsTyping(false)
-
-      const aiMsg = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: data.response || data.error || 'Une erreur est survenue.',
+      if (!res.ok) {
+        const data = await res.json()
+        setIsTyping(false)
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: data.error || 'Une erreur est survenue.',
+        }])
+        return
       }
-      setMessages(prev => [...prev, aiMsg])
+
+      // Lire le stream
+      setIsTyping(false)
+      const aiMsgId = Date.now() + 1
+      setMessages(prev => [...prev, { id: aiMsgId, role: 'assistant', content: '' }])
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n').filter(l => l.startsWith('data: '))
+
+        for (const line of lines) {
+          const data = line.slice(6)
+          if (data === '[DONE]') continue
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.text) {
+              fullText += parsed.text
+              setMessages(prev => prev.map(m =>
+                m.id === aiMsgId ? { ...m, content: fullText } : m
+              ))
+            }
+            if (parsed.error) {
+              setMessages(prev => prev.map(m =>
+                m.id === aiMsgId ? { ...m, content: '❌ ' + parsed.error } : m
+              ))
+            }
+          } catch {}
+        }
+      }
     } catch (err) {
       setIsTyping(false)
       setMessages(prev => [...prev, {

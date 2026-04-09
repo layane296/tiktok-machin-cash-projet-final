@@ -1,7 +1,13 @@
 // pages/api/ai/chat.js
-// API chat IA - réservé aux abonnés Premium+
+// Chat IA avec streaming - réponses mot par mot comme ChatGPT
 
 import { supabaseAdmin } from '../../../lib/supabase-server'
+
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -27,11 +33,17 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return res.status(500).json({ error: 'Clé API manquante.' })
 
+  const messages = [
+    ...(history || []).slice(-10).map(m => ({ role: m.role, content: m.content })),
+    { role: 'user', content: message },
+  ]
+
   try {
-    const messages = [
-      ...(history || []).map(m => ({ role: m.role, content: m.content })),
-      { role: 'user', content: message },
-    ]
+    // Streaming response
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -41,8 +53,9 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 8000,
+        model: 'claude-haiku-4-5-20251001', // Haiku = 3x plus rapide que Sonnet
+        max_tokens: 4000,
+        stream: true,
         system: `Tu es Nexvari AI, un assistant IA expert en développement et créativité. Tu es capable de :
 
 🖥️ CODE (tous les langages) :
@@ -51,8 +64,6 @@ export default async function handler(req, res) {
 - Scripts bash/shell, automatisation, APIs, bases de données
 - Tu fournis toujours du code complet, fonctionnel et bien commenté
 - Tu utilises des blocs de code markdown avec le bon langage (ex: \`\`\`python)
-- Tu expliques le code après l'avoir fourni
-- Si le code est long, tu le divises en sections claires
 
 📝 RÉDACTION & CRÉATIVITÉ :
 - Scripts TikTok, YouTube, podcasts
@@ -77,15 +88,41 @@ RÈGLES :
 
     if (!response.ok) {
       const err = await response.json()
-      return res.status(502).json({ error: err.error?.message || 'Erreur API.' })
+      res.write(`data: ${JSON.stringify({ error: err.error?.message || 'Erreur API.' })}\n\n`)
+      res.end()
+      return
     }
 
-    const data = await response.json()
-    const text = data.content?.[0]?.text || ''
+    // Lire le stream et le transmettre au client
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
 
-    return res.status(200).json({ response: text })
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n').filter(line => line.startsWith('data: '))
+
+      for (const line of lines) {
+        const data = line.slice(6)
+        if (data === '[DONE]') continue
+
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+            res.write(`data: ${JSON.stringify({ text: parsed.delta.text })}\n\n`)
+          }
+        } catch {}
+      }
+    }
+
+    res.write('data: [DONE]\n\n')
+    res.end()
+
   } catch (err) {
     console.error('Chat error:', err)
-    return res.status(500).json({ error: 'Erreur serveur.' })
+    res.write(`data: ${JSON.stringify({ error: 'Erreur serveur.' })}\n\n`)
+    res.end()
   }
 }
