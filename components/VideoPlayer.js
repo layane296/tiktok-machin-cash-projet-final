@@ -6,9 +6,7 @@ export default function VideoPlayer({ videoData, topic }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [downloading, setDownloading] = useState(false)
-  const [downloadProgress, setDownloadProgress] = useState(0)
-  const [downloadReady, setDownloadReady] = useState(false)
-  const [downloadError, setDownloadError] = useState('')
+  const [downloadDone, setDownloadDone] = useState(false)
   const audioRef = useRef(null)
   const intervalRef = useRef(null)
 
@@ -68,223 +66,49 @@ export default function VideoPlayer({ videoData, topic }) {
     }, 100)
   }
 
-  // ── Génération vidéo MP4 avec Canvas frame par frame ──────────
-  const downloadVideo = async () => {
+  // ── Télécharger tout le pack (images + audio) ─────────────────
+  const downloadPack = async () => {
     setDownloading(true)
-    setDownloadProgress(0)
-    setDownloadError('')
-
     try {
-      const width = isVertical ? 1080 : 1920
-      const height = isVertical ? 1920 : 1080
-      const fps = 30
-      const segDuration = Math.max(3, Math.floor((totalDuration || segments.length * 4) / segments.length))
-
-      // Créer canvas
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-
-      // Pré-charger toutes les images
-      setDownloadProgress(5)
-      const loadedImages = []
+      // 1. Télécharger chaque image
       for (let i = 0; i < segments.length; i++) {
         const seg = segments[i]
         if (seg.imageUrl || seg.imageBase64) {
-          const img = new Image()
-          await new Promise((resolve) => {
-            img.onload = resolve
-            img.onerror = resolve
-            img.src = seg.imageUrl || `data:image/png;base64,${seg.imageBase64}`
-          })
-          loadedImages.push(img)
-        } else {
-          loadedImages.push(null)
+          const imgData = seg.imageBase64
+            ? `data:image/png;base64,${seg.imageBase64}`
+            : seg.imageUrl
+
+          const a = document.createElement('a')
+          a.href = imgData
+          a.download = `nexvari-scene-${i + 1}.png`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          // Petit délai entre chaque téléchargement
+          await new Promise(r => setTimeout(r, 400))
         }
-        setDownloadProgress(5 + Math.floor((i / segments.length) * 20))
-      }
-      setDownloadProgress(25)
-
-      // Générer les frames PNG pour chaque segment
-      const allFrames = []
-      const framesPerSegment = fps * segDuration
-
-      for (let si = 0; si < segments.length; si++) {
-        const seg = segments[si]
-        const img = loadedImages[si]
-
-        for (let f = 0; f < framesPerSegment; f++) {
-          // Fond noir
-          ctx.fillStyle = '#000'
-          ctx.fillRect(0, 0, width, height)
-
-          // Image du segment
-          if (img && img.complete && img.naturalWidth > 0) {
-            // Cover fit
-            const imgAspect = img.naturalWidth / img.naturalHeight
-            const canvasAspect = width / height
-            let dw, dh, dx, dy
-            if (imgAspect > canvasAspect) {
-              dh = height; dw = height * imgAspect
-              dx = -(dw - width) / 2; dy = 0
-            } else {
-              dw = width; dh = width / imgAspect
-              dx = 0; dy = -(dh - height) / 2
-            }
-            ctx.drawImage(img, dx, dy, dw, dh)
-          } else {
-            // Fond dégradé si pas d'image
-            const grad = ctx.createLinearGradient(0, 0, width, height)
-            grad.addColorStop(0, '#FF2D55')
-            grad.addColorStop(1, '#8B5CF6')
-            ctx.fillStyle = grad
-            ctx.fillRect(0, 0, width, height)
-          }
-
-          // Overlay sombre en bas
-          const gradient = ctx.createLinearGradient(0, height * 0.5, 0, height)
-          gradient.addColorStop(0, 'rgba(0,0,0,0)')
-          gradient.addColorStop(1, 'rgba(0,0,0,0.85)')
-          ctx.fillStyle = gradient
-          ctx.fillRect(0, 0, width, height)
-
-          // Logo nexvari.com en haut
-          ctx.save()
-          ctx.font = `bold ${Math.floor(width * 0.028)}px Arial`
-          ctx.fillStyle = 'rgba(255,255,255,0.8)'
-          ctx.textAlign = 'center'
-          ctx.shadowColor = 'rgba(0,0,0,0.8)'
-          ctx.shadowBlur = 10
-          ctx.fillText('nexvari.com', width / 2, Math.floor(height * 0.045))
-          ctx.restore()
-
-          // Texte du segment avec word wrap
-          ctx.save()
-          const fontSize = Math.floor(width * 0.045)
-          ctx.font = `bold ${fontSize}px Arial`
-          ctx.fillStyle = '#FFFFFF'
-          ctx.textAlign = 'center'
-          ctx.shadowColor = 'rgba(0,0,0,0.9)'
-          ctx.shadowBlur = 20
-
-          const words = seg.text.split(' ')
-          const lines = []
-          let line = ''
-          const maxW = width * 0.85
-          for (const word of words) {
-            const test = line + word + ' '
-            if (ctx.measureText(test).width > maxW && line) {
-              lines.push(line.trim()); line = word + ' '
-            } else { line = test }
-          }
-          lines.push(line.trim())
-
-          const lineH = fontSize * 1.3
-          let textY = height - Math.floor(height * 0.08) - (lines.length - 1) * lineH
-          for (const l of lines) {
-            ctx.fillText(l, width / 2, textY)
-            textY += lineH
-          }
-          ctx.restore()
-
-          // Capturer le frame
-          allFrames.push(canvas.toDataURL('image/jpeg', 0.85))
-        }
-
-        setDownloadProgress(25 + Math.floor(((si + 1) / segments.length) * 50))
       }
 
-      setDownloadProgress(75)
-
-      // Encoder en WebM via MediaRecorder avec canvas animé
-      const offscreenCanvas = document.createElement('canvas')
-      offscreenCanvas.width = width
-      offscreenCanvas.height = height
-      const offCtx = offscreenCanvas.getContext('2d')
-
-      const stream = offscreenCanvas.captureStream(fps)
-
-      // Ajouter audio au stream
+      // 2. Télécharger la voix off MP3
       if (audio) {
-        try {
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-          const audioBytes = Uint8Array.from(atob(audio), c => c.charCodeAt(0))
-          const decoded = await audioCtx.decodeAudioData(audioBytes.buffer)
-          const src = audioCtx.createBufferSource()
-          src.buffer = decoded
-          const dest = audioCtx.createMediaStreamDestination()
-          src.connect(dest)
-          src.start(0)
-          for (const track of dest.stream.getAudioTracks()) {
-            stream.addTrack(track)
-          }
-        } catch (e) { console.log('Audio stream error:', e) }
-      }
-
-      const chunks = []
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : 'video/webm'
-
-      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 6000000 })
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-
-      await new Promise((resolve) => {
-        recorder.onstop = resolve
-        recorder.start()
-
-        let frameIndex = 0
-        const totalFrames = allFrames.length
-        const frameInterval = 1000 / fps
-
-        const renderFrame = () => {
-          if (frameIndex >= totalFrames) {
-            recorder.stop()
-            return
-          }
-          const imgEl = new Image()
-          imgEl.onload = () => {
-            offCtx.drawImage(imgEl, 0, 0, width, height)
-            const prog = 75 + Math.floor((frameIndex / totalFrames) * 20)
-            setDownloadProgress(Math.min(prog, 95))
-            frameIndex++
-            setTimeout(renderFrame, frameInterval)
-          }
-          imgEl.src = allFrames[frameIndex]
-        }
-        renderFrame()
-      })
-
-      setDownloadProgress(98)
-
-      // Télécharger
-      const blob = new Blob(chunks, { type: mimeType })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `nexvari-${(topic || 'video').replace(/\s+/g, '-').slice(0, 30)}.webm`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      setDownloadProgress(100)
-      setDownloadReady(true)
-    } catch (err) {
-      console.error('Download error:', err)
-      setDownloadError('Erreur de génération. Essaie sur Chrome ou Edge.')
-
-      // Fallback : télécharger juste le MP3
-      if (audio) {
-        const blob = new Blob([Uint8Array.from(atob(audio), c => c.charCodeAt(0))], { type: 'audio/mp3' })
+        await new Promise(r => setTimeout(r, 400))
+        const blob = new Blob(
+          [Uint8Array.from(atob(audio), c => c.charCodeAt(0))],
+          { type: 'audio/mp3' }
+        )
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `nexvari-${(topic || 'audio').slice(0, 20)}.mp3`
+        a.download = `nexvari-voix-off.mp3`
+        document.body.appendChild(a)
         a.click()
+        document.body.removeChild(a)
         URL.revokeObjectURL(url)
       }
+
+      setDownloadDone(true)
+    } catch (err) {
+      console.error('Download error:', err)
     } finally {
       setDownloading(false)
     }
@@ -306,7 +130,6 @@ export default function VideoPlayer({ videoData, topic }) {
                maxHeight: isVertical ? '460px' : 'auto',
              }}>
 
-          {/* Image courante */}
           {(currentSeg?.imageUrl || currentSeg?.imageBase64) ? (
             <img
               src={currentSeg.imageUrl || `data:image/png;base64,${currentSeg.imageBase64}`}
@@ -319,16 +142,13 @@ export default function VideoPlayer({ videoData, topic }) {
                  style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)' }} />
           )}
 
-          {/* Overlay gradient */}
           <div className="absolute inset-0"
                style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 35%, rgba(0,0,0,0.75) 100%)' }} />
 
-          {/* Logo */}
           <div className="absolute top-3 left-0 right-0 text-center">
             <span className="text-white/70 text-xs font-bold tracking-widest">nexvari.com</span>
           </div>
 
-          {/* Texte */}
           <div className="absolute bottom-10 left-3 right-3 text-center">
             <p className="text-white font-bold leading-relaxed"
                style={{ fontSize: '13px', textShadow: '0 2px 8px rgba(0,0,0,0.9)' }}>
@@ -336,16 +156,13 @@ export default function VideoPlayer({ videoData, topic }) {
             </p>
           </div>
 
-          {/* Progress */}
           <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'rgba(255,255,255,0.15)' }}>
             <div className="h-full transition-all duration-100"
                  style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #FF2D55, #8B5CF6)' }} />
           </div>
 
-          {/* Play button */}
           {!isPlaying && (
-            <button onClick={play}
-                    className="absolute inset-0 flex items-center justify-center">
+            <button onClick={play} className="absolute inset-0 flex items-center justify-center">
               <div className="w-14 h-14 rounded-full flex items-center justify-center"
                    style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)' }}>
                 <span className="text-white text-2xl ml-1">▶</span>
@@ -353,7 +170,6 @@ export default function VideoPlayer({ videoData, topic }) {
             </button>
           )}
 
-          {/* Dots */}
           <div className="absolute top-3 right-3 flex gap-1">
             {segments.map((_, i) => (
               <div key={i} className="w-1.5 h-1.5 rounded-full"
@@ -375,39 +191,65 @@ export default function VideoPlayer({ videoData, topic }) {
                 style={{ background: 'linear-gradient(135deg, #FF2D55, #8B5CF6)' }}>
           {isPlaying ? '⏸ Pause' : '▶ Play'}
         </button>
-        <button onClick={downloadVideo} disabled={downloading}
+        <button onClick={downloadPack} disabled={downloading}
                 className="px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60"
                 style={{
-                  background: downloadReady ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)',
-                  color: downloadReady ? '#10B981' : '#fff',
-                  border: `1px solid ${downloadReady ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                  background: downloadDone ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)',
+                  color: downloadDone ? '#10B981' : '#fff',
+                  border: `1px solid ${downloadDone ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.15)'}`,
                 }}>
-          {downloading ? `⏳ ${downloadProgress}%` : downloadReady ? '✅ Téléchargé !' : '⬇️ Télécharger vidéo'}
+          {downloading ? '⏳ Téléchargement...' : downloadDone ? '✅ Pack téléchargé !' : '⬇️ Télécharger le pack'}
         </button>
       </div>
 
-      {/* Progress bar téléchargement */}
-      {downloading && (
-        <div className="rounded-xl overflow-hidden border border-white/10">
-          <div className="h-2 bg-white/5">
-            <div className="h-full transition-all duration-300"
-                 style={{ width: `${downloadProgress}%`, background: 'linear-gradient(90deg, #FF2D55, #8B5CF6)' }} />
-          </div>
-          <div className="px-4 py-2 text-center">
-            <p className="text-white/50 text-xs">
-              {downloadProgress < 25 ? '🖼️ Chargement des images...' :
-               downloadProgress < 75 ? '🎨 Génération des frames...' :
-               downloadProgress < 95 ? '🎬 Encodage vidéo...' : '✅ Finalisation...'}
-            </p>
-          </div>
+      {/* Infos pack */}
+      <div className="rounded-2xl border border-white/10 p-4"
+           style={{ background: 'rgba(255,255,255,0.02)' }}>
+        <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-3">
+          📦 Contenu du pack téléchargeable
+        </p>
+        <div className="space-y-2">
+          {segments.map((seg, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0"
+                   style={{ background: 'rgba(255,255,255,0.05)' }}>
+                {(seg.imageUrl || seg.imageBase64) && (
+                  <img
+                    src={seg.imageUrl || `data:image/png;base64,${seg.imageBase64}`}
+                    alt={`Scene ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+              <p className="text-white/50 text-xs truncate flex-1">
+                📸 Scene {i + 1} — {seg.text?.slice(0, 40)}...
+              </p>
+            </div>
+          ))}
+          {audio && (
+            <div className="flex items-center gap-3 pt-1 border-t border-white/5 mt-1">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(139,92,246,0.2)' }}>
+                🎙️
+              </div>
+              <p className="text-white/50 text-xs">Voix off — nexvari-voix-off.mp3</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {downloadError && (
-        <div className="rounded-xl p-3 text-center border border-red-500/20"
-             style={{ background: 'rgba(255,45,85,0.05)' }}>
-          <p className="text-red-400 text-xs">{downloadError}</p>
-          <p className="text-white/30 text-xs mt-1">Le fichier MP3 a été téléchargé à la place.</p>
+      {/* Guide CapCut */}
+      {downloadDone && (
+        <div className="rounded-2xl border border-green-500/20 p-4"
+             style={{ background: 'rgba(16,185,129,0.05)' }}>
+          <p className="text-green-400 text-xs font-semibold mb-2">✅ Pack téléchargé ! Voici comment assembler ta vidéo :</p>
+          <ol className="space-y-1.5 text-white/50 text-xs">
+            <li>1. Ouvre <strong className="text-white">CapCut</strong> (gratuit sur mobile/PC)</li>
+            <li>2. Importe les images <strong className="text-white">scene-1, scene-2...</strong> dans l'ordre</li>
+            <li>3. Importe la voix off <strong className="text-white">nexvari-voix-off.mp3</strong></li>
+            <li>4. Ajuste la durée de chaque image selon la voix</li>
+            <li>5. Exporte en MP4 et poste sur TikTok ! 🚀</li>
+          </ol>
         </div>
       )}
 
