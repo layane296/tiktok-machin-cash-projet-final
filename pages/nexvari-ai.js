@@ -51,13 +51,90 @@ const IconSparkle = () => (
 )
 
 const SUGGESTIONS = [
+  { emoji: '⚡', text: 'Crée une API REST en Node.js avec Express et MongoDB' },
+  { emoji: '🐍', text: 'Écris un script Python pour scraper un site web' },
+  { emoji: '⚛️', text: 'Crée un composant React avec hook useState et useEffect' },
   { emoji: '🎬', text: 'Écris-moi un script TikTok viral sur le dropshipping' },
-  { emoji: '📧', text: 'Rédige un email de prospection pour mes clients' },
-  { emoji: '🖼️', text: 'Génère une image d\'un coucher de soleil futuriste' },
-  { emoji: '💡', text: 'Donne-moi 10 idées de business en ligne pour 2025' },
-  { emoji: '📝', text: 'Analyse ce texte et résume-le en 5 points clés' },
-  { emoji: '🚀', text: 'Comment créer une stratégie marketing TikTok ?' },
+  { emoji: '🗄️', text: 'Crée une base de données SQL avec tables et relations' },
+  { emoji: '🤖', text: 'Automatise l\'envoi d\'emails avec Python et SMTP' },
 ]
+
+function CodeBlock({ code, language }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden my-2" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="flex items-center justify-between px-4 py-2"
+           style={{ background: 'rgba(255,255,255,0.08)' }}>
+        <span className="text-xs font-mono text-white/50">{language || 'code'}</span>
+        <button onClick={handleCopy}
+                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors">
+          {copied ? '✅ Copié !' : '📋 Copier'}
+        </button>
+      </div>
+      <pre className="p-4 overflow-x-auto text-xs leading-relaxed"
+           style={{ background: 'rgba(0,0,0,0.4)', color: '#e2e8f0', fontFamily: 'monospace' }}>
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
+function renderMessage(content) {
+  const parts = []
+  const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    // Text before code block
+    if (match.index > lastIndex) {
+      const text = content.slice(lastIndex, match.index)
+      parts.push(<span key={lastIndex} className="whitespace-pre-wrap">{formatText(text)}</span>)
+    }
+    // Code block
+    parts.push(
+      <CodeBlock key={match.index} language={match[1]} code={match[2].trim()} />
+    )
+    lastIndex = match.index + match[0].length
+  }
+
+  // Remaining text
+  if (lastIndex < content.length) {
+    parts.push(<span key={lastIndex} className="whitespace-pre-wrap">{formatText(content.slice(lastIndex))}</span>)
+  }
+
+  return parts.length > 0 ? parts : <span className="whitespace-pre-wrap">{formatText(content)}</span>
+}
+
+function formatText(text) {
+  // Bold **text**
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="text-white font-semibold">{part.slice(2, -2)}</strong>
+    }
+    // Inline code `code`
+    const codeParts = part.split(/(`[^`]+`)/g)
+    return codeParts.map((cp, j) => {
+      if (cp.startsWith('`') && cp.endsWith('`')) {
+        return (
+          <code key={j} className="px-1.5 py-0.5 rounded text-xs font-mono"
+                style={{ background: 'rgba(255,255,255,0.1)', color: '#00F5FF' }}>
+            {cp.slice(1, -1)}
+          </code>
+        )
+      }
+      return cp
+    })
+  })
+}
 
 function MessageBubble({ message, onCopy }) {
   const isUser = message.role === 'user'
@@ -83,7 +160,7 @@ function MessageBubble({ message, onCopy }) {
       </div>
 
       {/* Bubble */}
-      <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+      <div className={`max-w-[85%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
         <div className="rounded-2xl px-4 py-3 text-sm leading-relaxed"
              style={{
                background: isUser
@@ -109,8 +186,8 @@ function MessageBubble({ message, onCopy }) {
             </div>
           )}
 
-          {/* Text content */}
-          <div className="whitespace-pre-wrap">{message.content}</div>
+          {/* Text content with code rendering */}
+          <div>{isUser ? <span className="whitespace-pre-wrap">{message.content}</span> : renderMessage(message.content)}</div>
         </div>
 
         {/* Copy button */}
